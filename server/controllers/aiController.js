@@ -1,6 +1,30 @@
 import Resume from "../models/Resume.js";
 import ai from "../configs/ai.js";
 
+const getAiErrorResponse = (err) => {
+  const message = err?.message || "Unable to process the AI request.";
+  const statusFromMessage = Number(message.match(/^(\d{3})\sstatus code/)?.[1]);
+  const status =
+    err?.status || err?.response?.status || statusFromMessage || 400;
+
+  if (status === 429) {
+    return {
+      status,
+      message: "AI rate limit reached. Please wait a moment and try again.",
+    };
+  }
+
+  if (status === 403) {
+    return {
+      status,
+      message:
+        "The AI provider rejected the request. Check your AI API key and provider access.",
+    };
+  }
+
+  return { status, message };
+};
+
 // controller for enhancing a resume's professional summary
 // POST: /api/ai/enhance-pro-sum
 
@@ -26,7 +50,8 @@ export const enhanceProfessionalSummary = async (req, res) => {
     const enhancedContent = response.choices[0].message.content;
     return res.status(200).json({ enhancedContent });
   } catch (err) {
-    return res.status(400).json({ message: err.message });
+    const aiError = getAiErrorResponse(err);
+    return res.status(aiError.status).json({ message: aiError.message });
   }
 };
 
@@ -54,7 +79,8 @@ export const enhanceJobDescription = async (req, res) => {
     const enhancedContent = response.choices[0].message.content;
     return res.status(200).json({ enhancedContent });
   } catch (err) {
-    return res.status(400).json({ message: err.message });
+    const aiError = getAiErrorResponse(err);
+    return res.status(aiError.status).json({ message: aiError.message });
   }
 };
 
@@ -136,6 +162,7 @@ export const uploadResume = async (req, res) => {
       resumeId: newResume._id,
     });
   } catch (err) {
-    return res.status(400).json({ message: err.message });
+    const aiError = getAiErrorResponse(err);
+    return res.status(aiError.status).json({ message: aiError.message });
   }
 };
