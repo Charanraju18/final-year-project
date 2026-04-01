@@ -30,6 +30,7 @@ const getAiErrorResponse = (err) => {
 
 export const enhanceProfessionalSummary = async (req, res) => {
   try {
+    console.log("API KEY:", process.env.OPENAI_API_KEY?.slice(0, 10));
     const { userContent } = req.body;
     if (!userContent) {
       return res.status(400).json({ message: "Missing required fields." });
