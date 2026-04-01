@@ -1,28 +1,41 @@
 import { Loader2, Sparkles } from "lucide-react";
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
 import api from "../configs/api.js";
 const ProfessionalSummaryForm = ({ data, onChange, setResumeData }) => {
   const { token } = useSelector((state) => state.auth);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateSummary = async () => {
+    const authToken = token || localStorage.getItem("token");
+
+    if (!authToken) {
+      toast.error("Please sign in again to use AI enhance.");
+      return;
+    }
+
     try {
       setIsGenerating(true);
-      const prompt = `enhance my professional summary "${data}"`;
+      const summaryText = typeof data === "string" ? data.trim() : "";
+      const prompt = summaryText
+        ? `enhance my professional summary "${summaryText}"`
+        : "write a concise, ATS-friendly professional summary for a resume";
       const response = await api.post(
         "/api/ai/enhance-pro-sum",
         { userContent: prompt },
         {
-          headers: { Authorization: token },
+          headers: { Authorization: `Bearer ${authToken}` },
         },
       );
       setResumeData((prev) => ({
         ...prev,
-        professional_summary: response.data.enhancedContent,
+        professional_summary: response.data.enhancedContent || "",
       }));
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+      toast.error(
+        error.response?.data?.message || "Unable to enhance summary right now.",
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -39,6 +52,7 @@ const ProfessionalSummaryForm = ({ data, onChange, setResumeData }) => {
           </p>
         </div>
         <button
+          type="button"
           disabled={isGenerating}
           onClick={generateSummary}
           className="flex items-center gap-2 px-3 py-1 text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50"
